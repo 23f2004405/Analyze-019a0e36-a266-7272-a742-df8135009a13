@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GitHub Actions & Data Conversion Guide</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f5f5f5;
+    color: #333;
+  }
+  h1 {
+    text-align: center;
+    color: #2c3e50;
+  }
+  section {
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  h2 {
+    margin-top: 0;
+    color: #34495e;
+  }
+  pre {
+    background: #eef;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+  a {
+    color: #2980b9;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+  code {
+    font-family: monospace;
+  }
+</style>
+</head>
+<body>
+<h1>Automating Data Processing & CI/CD on GitHub Pages</h1>
+
+<section>
+<h2>1. Prepare the Python Script</h2>
+<p>Given <code>execute.py</code>, ensure it has a non-trivial error fixed. For illustration, suppose the error was a misused pandas import or a data processing step. Below is an example fix (replace with actual fix based on your <code>execute.py</code>):</p>
+<pre><code># Fixed execute.py example
+import pandas as pd
+
+def main():
+    df = pd.read_excel('data.xlsx')
+    # perform some data processing
+    result = df.describe()
+    # save the result as JSON
+    result.to_json('result.json')
+
+if __name__ == '__main__':
+    main()
+</code></pre>
+<p>Remember to replace this with your actual corrected code.</p>
+</section>
+
+<section>
+<h2>2. Convert data.xlsx to data.csv</h2>
+<p>Use pandas or a tool to convert <code>data.xlsx</code> to <code>data.csv</code>. For example, a Python snippet:</p>
+<pre><code>import pandas as pd
+df = pd.read_excel('data.xlsx')
+df.to_csv('data.csv', index=False)
+</code></pre>
+<p>Run this locally or include it as a script to generate <code>data.csv</code>. Commit <code>data.csv</code>.</p>
+</section>
+
+<section>
+<h2>3. Set Up GitHub Actions Workflow</h2>
+<p>Create <code>.github/workflows/ci.yml</code> in your repo with the following content. This will:</p>
+<ul>
+<li>Run <code>ruff</code> to check your code style.</li>
+<li>Run <code>python execute.py > result.json</code> to generate <code>result.json</code>.</li>
+<li>Publish <code>result.json</code> via GitHub Pages.</li>
+</ul>
+<pre><code>name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas==2.3.0
+          pip install ruff
+
+      - name: Run ruff for linting
+        run: |
+          ruff .
+
+      - name: Run execution script
+        run: |
+          python execute.py > result.json
+        # Assume execute.py produces output in JSON
+
+      - name: Publish to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          user_name: GitHub Actions
+          user_email: action@github.com
+          cname: ''  # Optional custom domain
+
+# Note: To actually publish result.json, you might need to copy it to the root or specify publish_dir accordingly.
+</code></pre>
+<p>Adjust paths as needed. The <code>publish_dir</code> should contain <code>result.json</code> for it to be served via GitHub Pages.</p>
+</section>
+
+<section>
+<h2>Notes</h2>
+<ul>
+<li>Do not commit <code>result.json</code>. It will be generated during CI/CD.</li>
+<li>Ensure your <code>execute.py</code> is corrected properly and that <code>data.xlsx</code> is converted to <code>data.csv</code>.</li>
+<li>The workflow above demonstrates style checking, execution, and deployment via GitHub Pages.</li>
+</ul>
+</section>
+</body>
+</html>
